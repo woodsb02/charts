@@ -1,0 +1,41 @@
+name: "SCALE: catalog-tests"
+
+on:
+  workflow_call:
+    inputs:
+      checkoutCommit:
+        required: true
+        type: string
+      chartChangesDetected:
+        required: true
+        type: string
+
+jobs:
+  catalog-tests:
+    name: Test SCALE Catalog
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/truecharts/devcontainer:v2.6.0@sha256:cefec796e714cd07bae25ef48670999819ceefa0cbb5ff8b9738fabc916ceea7
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+        name: Checkout
+        with:
+          fetch-depth: 100
+          ref: ${{ inputs.checkoutCommit }}
+
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+        with:
+          repository: truecharts/catalog
+          path: catalog
+
+      - name: build-and-run
+        run: |
+          tools/build-release.sh
+
+      - uses: vishnudxb/cancel-workflow@c3c77eb4383ba7d023e6614a07d94fe990501ac6 # tag=v1.2
+        if: failure()
+        with:
+          repo: truecharts/charts
+          workflow_id: ${{ github.run_id }}
+          access_token: ${{ github.token }}
